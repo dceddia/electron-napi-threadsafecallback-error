@@ -31,10 +31,14 @@ pub struct JsRepeater {
 #[napi]
 impl JsRepeater {
   #[napi(constructor)]
-  pub fn new(callback: JsFunction) -> Result<Self> {
-    // Create a threadsafe function around the given callback
-    let cb1: ThreadsafeFunction<u32> = callback.create_threadsafe_function(0, send_update)?;
-    let cb2: ThreadsafeFunction<u32> = callback.create_threadsafe_function(0, send_update)?;
+  pub fn new(callback1: JsFunction, callback2: JsFunction) -> Result<Self> {
+    // Create a threadsafe function around each callback
+    //
+    // Other things to try:
+    //   - call create_threadsafe_function twice on the same callback (has same effect)
+    //   - only create 1 threadsafe function (doesn't deadlock-panic, but does panic when failing to release)
+    let cb1: ThreadsafeFunction<u32> = callback1.create_threadsafe_function(0, send_update)?;
+    let cb2: ThreadsafeFunction<u32> = callback2.create_threadsafe_function(0, send_update)?;
 
     let quit = Arc::new(AtomicBool::new(false));
     let handle1 = spawn_worker("ONE".to_string(), quit.clone(), cb1);
