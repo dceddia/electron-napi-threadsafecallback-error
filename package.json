@@ -4,7 +4,9 @@
   "description": "A minimal Electron application",
   "main": "main.js",
   "scripts": {
-    "start": "cd bindings && npm run build && cd .. && electron ."
+    "start": "cd bindings && npm run build && cd .. && electron .",
+    "start:debug": "cd bindings && npm run build:debug && cd .. && electron .",
+    "clean": "cd bindings && rm -rf target"
   },
   "repository": "https://github.com/electron/electron-quick-start",
   "keywords": [
@@ -17,7 +19,7 @@
   "author": "GitHub",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^16.0.5"
+    "electron": "^16.0.6"
   },
   "dependencies": {
     "barebones-napi": "file:../barebones-napi"
