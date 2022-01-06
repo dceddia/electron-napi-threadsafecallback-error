@@ -21,45 +21,51 @@ pub fn sum(a: i32, b: i32) -> i32 {
   a + b
 }
 
-pub struct Repeater {
+#[napi]
+pub struct JsRepeater {
   handle: Option<JoinHandle<Result<()>>>,
   quit: Arc<AtomicBool>,
 }
 
-impl Repeater {
-  /// Spawn a thread to repeatedly call the callback every `how_often` milliseconds.
-  pub fn new<F>(callback: F, how_often: u64) -> Repeater
-  where
-    F: Fn(u32) -> () + Send + 'static,
-  {
+#[napi]
+impl JsRepeater {
+  #[napi(constructor)]
+  pub fn new(env: Env, callback: JsFunction) -> Result<Self> {
+    // Create a threadsafe function around the given callback
+    let mut ts_callback: ThreadsafeFunction<u32> =
+      callback.create_threadsafe_function(0, send_update)?;
+    ts_callback.refer(&env).expect("failed to ref the callback");
+
     let quit = Arc::new(AtomicBool::new(false));
-
     let should_quit = quit.clone();
-    let handle = thread::spawn(move || actual_work(callback, how_often, should_quit));
+    let handle = thread::spawn(move || {
+      let mut i = 0;
+      while !should_quit.load(Ordering::SeqCst) {
+        thread::sleep(Duration::from_millis(500));
+        let status = ts_callback.call(
+          Ok(i),
+          napi::threadsafe_function::ThreadsafeFunctionCallMode::NonBlocking,
+        );
+        println!("called function with {}, {}", i, status);
+        i += 1;
+      }
+      println!(
+        "done with loop, callback is aborted? {:?}",
+        ts_callback.aborted()
+      );
+      // ts_callback.abort().expect("failed to abort");
 
-    Repeater {
+      Ok(())
+    });
+
+    Ok(JsRepeater {
       handle: Some(handle),
       quit,
-    }
+    })
   }
 }
 
-fn actual_work<F: Fn(u32) -> ()>(
-  callback: F,
-  how_often: u64,
-  should_quit: Arc<AtomicBool>,
-) -> Result<()> {
-  let mut i = 0;
-  while !should_quit.load(Ordering::SeqCst) {
-    thread::sleep(Duration::from_millis(how_often));
-    callback(i);
-    i += 1;
-  }
-
-  Ok(())
-}
-
-impl Drop for Repeater {
+impl Drop for JsRepeater {
   fn drop(&mut self) {
     self.quit.store(true, Ordering::SeqCst);
 
@@ -68,33 +74,6 @@ impl Drop for Repeater {
       let _ = thread.join();
       println!("joined");
     }
-  }
-}
-
-#[napi]
-pub struct JsRepeater {
-  inner: Repeater,
-}
-
-#[napi]
-impl JsRepeater {
-  #[napi(constructor)]
-  pub fn new(callback: JsFunction) -> Result<Self> {
-    // Create a threadsafe function around the given callback
-    let ts_callback: ThreadsafeFunction<u32> =
-      callback.create_threadsafe_function(0, send_update)?;
-
-    let r = Repeater::new(
-      move |val| {
-        ts_callback.call(
-          Ok(val),
-          napi::threadsafe_function::ThreadsafeFunctionCallMode::NonBlocking,
-        );
-      },
-      500,
-    );
-
-    Ok(JsRepeater { inner: r })
   }
 }
 
