@@ -9,3 +9,11 @@
 console.log('Napi is', window.Napi);
 let sum = new window.Napi.sum(2, 2);
 console.log('sum 2 + 2 =', sum);
+
+let repeater = new window.Napi.JsRepeater((err, val) => {
+  if (err) {
+    console.error('error', err);
+    return;
+  }
+  console.log('repeater sent', val);
+});

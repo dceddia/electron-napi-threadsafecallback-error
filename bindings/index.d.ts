@@ -10,3 +10,6 @@ export class ExternalObject<T> {
   }
 }
 export function sum(a: number, b: number): number
+export class JsRepeater {
+  constructor(callback: (...args: any[]) => any)
+}
