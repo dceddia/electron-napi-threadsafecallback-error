@@ -57,13 +57,13 @@ impl Drop for JsRepeater {
     self.quit.store(true, Ordering::SeqCst);
 
     if let Some(thread) = self.handle1.take() {
-      println!("joining handle1...");
+      println!("joining handle1");
       let _ = thread.join();
       println!("joined handle1");
     }
 
     if let Some(thread) = self.handle2.take() {
-      println!("joining handle...");
+      println!("joining handle2");
       let _ = thread.join();
       println!("joined handle2");
     }
@@ -83,19 +83,21 @@ fn spawn_worker(
     let mut i = 0;
 
     while !should_quit.load(Ordering::SeqCst) {
-      thread::sleep(Duration::from_millis(500));
+      thread::sleep(Duration::from_millis(3));
       let status = ts_callback.call(
         Ok(i),
         napi::threadsafe_function::ThreadsafeFunctionCallMode::NonBlocking,
       );
-      println!("called function {} with {}, {}", name, i, status);
+      //println!("called function {} with {}, {}", name, i, status);
       i += 1;
     }
 
+    /*
     println!(
       "done with loop, callback is aborted? {:?}",
       ts_callback.aborted()
     );
+    */
 
     Ok(())
   })

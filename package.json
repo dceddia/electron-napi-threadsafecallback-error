@@ -6,6 +6,7 @@
   "scripts": {
     "start": "cd bindings && npm run build && cd .. && electron .",
     "start:debug": "cd bindings && npm run build:debug && cd .. && electron .",
+    "start:clean": "npm run clean && npm run start:debug",
     "clean": "cd bindings && rm -rf target"
   },
   "repository": "https://github.com/electron/electron-quick-start",
